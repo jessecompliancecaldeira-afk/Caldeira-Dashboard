@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Onboarding - Caldeira OTC</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F5F5F5; min-height: 100vh; }
+
+  .header { text-align: center; padding: 2rem 0 1.5rem; }
+  .header h1 { font-size: 26px; font-weight: 600; color: #D4674A; letter-spacing: 2px; }
+
+  .container { max-width: 1000px; margin: 0 auto; padding: 0 1.5rem 3rem; }
+
+  .top-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .bottom-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+
+  .card {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+
+  .card-label { font-size: 12px; color: #888; margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+  .card-value { font-size: 28px; font-weight: 600; color: #D4674A; }
+  .card-value.text { font-size: 15px; line-height: 1.5; color: #1A1A1A; }
+  .card-value.empty { color: #ccc; font-size: 20px; }
+
+  select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+    color: #1A1A1A;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 8px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+  }
+  select:focus { outline: none; border-color: #D4674A; }
+
+  .select-title { font-size: 15px; font-weight: 600; color: #1A1A1A; margin-bottom: 4px; }
+
+  .donut-wrap { display: flex; align-items: center; gap: 16px; margin-top: 8px; }
+  .donut-legend { font-size: 12px; color: #666; }
+  .donut-legend div { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  .table-wrap {
+    background: #fff;
+    border: 1px solid #e8e8e8;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+
+  .table-title { padding: 14px 16px; font-size: 14px; font-weight: 600; color: #1A1A1A; border-bottom: 1px solid #f0f0f0; background: #fafafa; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: #fafafa; color: #888; font-weight: 600; padding: 10px 16px; text-align: left; border-bottom: 1px solid #f0f0f0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 11px 16px; border-bottom: 1px solid #f7f7f7; color: #1A1A1A; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fdf5f2; }
+
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-ok { background: #EAF3DE; color: #3B6D11; }
+  .badge-late { background: #FCEBEB; color: #A32D2D; }
+  .badge-doc-ok { background: #E6F1FB; color: #185FA5; }
+  .badge-doc-inc { background: #FAEEDA; color: #854F0B; }
+
+  .empty-state { text-align: center; padding: 2.5rem; color: #aaa; font-size: 14px; }
+
+  .refresh-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .refresh-bar span { font-size: 12px; color: #aaa; }
+  .refresh-btn { background: #D4674A; color: #fff; border: none; padding: 7px 16px; border-radius: 8px; font-size: 13px; cursor: pointer; font-weight: 500; }
+  .refresh-btn:hover { background: #c05a3f; }
+
+  .summary-chips { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .chip { background: #fff; border: 1px solid #e8e8e8; border-radius: 20px; padding: 5px 14px; font-size: 12px; color: #666; font-weight: 500; }
+  .chip span { color: #D4674A; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>ONBOARDING — CALDEIRA</h1>
+</div>
+
+<div class="container">
+
+  <div class="refresh-bar">
+    <div class="summary-chips" id="summaryChips"></div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span id="lastUpdate">Carregando...</span>
+      <button class="refresh-btn" onclick="loadData()">↻ Atualizar</button>
+    </div>
+  </div>
+
+  <div class="top-row">
+    <div class="card">
+      <div class="select-title">Selecione o cliente</div>
+      <select id="clientSelect">
+        <option value="">Todos os clientes</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="card-label">Etapa atual do onboarding</div>
+      <div class="card-value text empty" id="statusAtual">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Visão geral</div>
+      <div class="donut-wrap">
+        <canvas id="donutChart" width="80" height="80"></canvas>
+        <div class="donut-legend" id="donutLegend">Carregando...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-row">
+    <div class="card">
+      <div class="card-label">Dias em aberto</div>
+      <div class="card-value empty" id="diasAberto">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Status da documentação</div>
+      <div class="card-value text empty" id="docStatus">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Alerta de SLA</div>
+      <div id="slaCard" style="margin-top:6px;">—</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-title">Onboardings em análise</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Empresa</th>
+          <th>Recebimento</th>
+          <th>Documentação</th>
+          <th>Dias em aberto</th>
+          <th>Status atual</th>
+          <th>SLA</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr><td colspan="6" class="empty-state">Carregando dados...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRIuHIunSGr0LCNSJ_uC4SSq2CJliDeyhzOcQmkYVwUbiAHP4XYT32d-EKwMOWatZLRdEOaLO0B_wOO/pub?gid=268288689&single=true&output=csv';
+
+let allData = [];
+
+function parseDate(str) {
+  if (!str) return null;
+  str = str.trim();
+  const parts = str.split('/');
+  if (parts.length === 3) {
+    return new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
+  }
+  const d = new Date(str);
+  return isNaN(d) ? null : d;
+}
+
+function daysOpen(dateStr, status) {
+  if (status !== 'Em análise') return null;
+  const d = parseDate(dateStr);
+  if (!d || isNaN(d)) return null;
+  return Math.floor((new Date() - d) / 86400000);
+}
+
+function formatDate(str) {
+  if (!str) return '—';
+  const d = parseDate(str);
+  if (!d || isNaN(d)) return str;
+  return d.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'});
+}
+
+function drawDonut(data) {
+  const canvas = document.getElementById('donutChart');
+  const ctx = canvas.getContext('2d');
+  const counts = {};
+  data.forEach(r => {
+    const s = (r['Status do Cliente'] || '').trim();
+    if (s) counts[s] = (counts[s] || 0) + 1;
+  });
+  const colors = { 'Em análise': '#D4674A', 'Cliente': '#1A1A1A', 'Rejeitado': '#888' };
+  const entries = Object.entries(counts);
+  const total = entries.reduce((s, [,v]) => s+v, 0);
+  if (total === 0) return;
+  const cx = 40, cy = 40, r = 34, inner = 20;
+  ctx.clearRect(0, 0, 80, 80);
+  let angle = -Math.PI / 2;
+  entries.forEach(([k, v]) => {
+    const sweep = (v / total) * 2 * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, angle, angle + sweep);
+    ctx.closePath();
+    ctx.fillStyle = colors[k] || '#ccc';
+    ctx.fill();
+    angle += sweep;
+  });
+  ctx.beginPath();
+  ctx.arc(cx, cy, inner, 0, 2 * Math.PI);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+  const legend = document.getElementById('donutLegend');
+  legend.innerHTML = entries.map(([k, v]) => {
+    const pct = Math.round(v / total * 100);
+    return `<div><span class="dot" style="background:${colors[k]||'#ccc'}"></span>${k}: ${v} (${pct}%)</div>`;
+  }).join('');
+}
+
+function renderTable(data) {
+  const tbody = document.getElementById('tableBody');
+  const filtered = data.filter(r => (r['Status do Cliente']||'').trim() === 'Em análise');
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhum onboarding em análise</td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map(r => {
+    const days = daysOpen(r['Data do recebimento'], r['Status do Cliente']);
+    const sla = days === null ? '—' : (days > 2 ? '<span class="badge badge-late">SLA Atrasado</span>' : '<span class="badge badge-ok">No prazo</span>');
+    const doc = (r['Documentação']||'').trim();
+    const docBadge = doc === 'Completa' || doc === 'completa'
+      ? `<span class="badge badge-doc-ok">${doc}</span>`
+      : doc ? `<span class="badge badge-doc-inc">${doc}</span>` : '—';
+    return `<tr>
+      <td><strong>${r['Nome da Empresa'] || '—'}</strong></td>
+      <td>${formatDate(r['Data do recebimento'])}</td>
+      <td>${docBadge}</td>
+      <td>${days !== null ? days + ' dias' : '—'}</td>
+      <td>${r['Status atual'] || '—'}</td>
+      <td>${sla}</td>
+    </tr>`;
+  }).join('');
+}
+
+function updateCards(selectedClient) {
+  const statusEl = document.getElementById('statusAtual');
+  const diasEl = document.getElementById('diasAberto');
+  const docEl = document.getElementById('docStatus');
+  const slaEl = document.getElementById('slaCard');
+  if (!selectedClient) {
+    statusEl.textContent = '—'; statusEl.className = 'card-value text empty';
+    diasEl.textContent = '—'; diasEl.className = 'card-value empty';
+    docEl.textContent = '—'; docEl.className = 'card-value text empty';
+    slaEl.innerHTML = '—';
+    return;
+  }
+  const row = allData.find(r => r['Nome da Empresa'] === selectedClient);
+  if (!row) return;
+  const days = daysOpen(row['Data do recebimento'], row['Status do Cliente']);
+  statusEl.textContent = row['Status atual'] || '—';
+  statusEl.className = 'card-value text';
+  diasEl.textContent = days !== null ? days + ' dias' : '—';
+  diasEl.className = 'card-value';
+  docEl.textContent = row['Documentação'] || '—';
+  docEl.className = 'card-value text';
+  if (days !== null) {
+    slaEl.innerHTML = days > 2
+      ? '<span class="badge badge-late" style="font-size:14px;padding:6px 14px;">⚠ SLA Atrasado</span>'
+      : '<span class="badge badge-ok" style="font-size:14px;padding:6px 14px;">✓ No prazo</span>';
+  } else {
+    slaEl.innerHTML = '—';
+  }
+}
+
+function updateSummaryChips(data) {
+  const emAnalise = data.filter(r => (r['Status do Cliente']||'').trim() === 'Em análise').length;
+  const finalizados = data.filter(r => (r['Status do Cliente']||'').trim() === 'Cliente').length;
+  const docInc = data.filter(r => (r['Status do Cliente']||'').trim() === 'Em análise' && (r['Documentação']||'').toLowerCase() === 'incompleta').length;
+  const slaLate = data.filter(r => {
+    if ((r['Status do Cliente']||'').trim() !== 'Em análise') return false;
+    const d = daysOpen(r['Data do recebimento'], r['Status do Cliente']);
+    return d !== null && d > 2;
+  }).length;
+  document.getElementById('summaryChips').innerHTML = `
+    <div class="chip">Em análise: <span>${emAnalise}</span></div>
+    <div class="chip">Finalizados: <span>${finalizados}</span></div>
+    <div class="chip">Doc. incompleta: <span>${docInc}</span></div>
+    <div class="chip">SLA atrasado: <span>${slaLate}</span></div>
+  `;
+}
+
+function populateSelect(data) {
+  const sel = document.getElementById('clientSelect');
+  sel.innerHTML = '<option value="">Todos os clientes</option>';
+  const emAnalise = data.filter(r => (r['Status do Cliente']||'').trim() === 'Em análise');
+  const names = [...new Set(emAnalise.map(r => r['Nome da Empresa']))].sort();
+  names.forEach(n => {
+    if (!n) return;
+    const opt = document.createElement('option');
+    opt.value = n; opt.textContent = n;
+    sel.appendChild(opt);
+  });
+}
+
+document.getElementById('clientSelect').addEventListener('change', function() {
+  const v = this.value;
+  updateCards(v);
+  drawDonut(v ? allData.filter(r => r['Nome da Empresa'] === v) : allData);
+  renderTable(v ? allData.filter(r => r['Nome da Empresa'] === v) : allData);
+});
+
+function loadData() {
+  document.getElementById('lastUpdate').textContent = 'Atualizando...';
+  Papa.parse(CSV_URL, {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results) {
+      allData = results.data.filter(r => r['Nome da Empresa'] && r['Nome da Empresa'].trim() !== '');
+      populateSelect(allData);
+      renderTable(allData);
+      drawDonut(allData);
+      updateSummaryChips(allData);
+      const now = new Date();
+      document.getElementById('lastUpdate').textContent = 'Atualizado às ' + now.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+    },
+    error: function() {
+      document.getElementById('tableBody').innerHTML = '<tr><td colspan="6" class="empty-state">Erro ao carregar dados. Verifique a conexão com a planilha.</td></tr>';
+      document.getElementById('lastUpdate').textContent = 'Erro ao atualizar';
+    }
+  });
+}
+
+loadData();
+</script>
+</body>
+</html>
